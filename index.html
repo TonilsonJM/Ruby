@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruby Loser | Scanlator & Leitor de Mangás</title>
+    <!-- Carregando Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carregando Fontes: Cinzel (Gótico/Títulos), Inter (UI) e Comic Neue (Quadrinhos) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Comic+Neue:ital,wght@0,700;1,700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        gothic: ['Cinzel', 'serif'],
+                        comic: ['Comic Neue', 'cursive'],
+                    },
+                    colors: {
+                        obsidian: '#09070d',
+                        void: '#120e1a',
+                        ruby: {
+                            DEFAULT: '#e11d48',
+                            glow: '#ff1e56',
+                            dark: '#881337'
+                        },
+                        neonpurple: {
+                            DEFAULT: '#9333ea',
+                            glow: '#c084fc',
+                            dark: '#3b0764'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Efeitos Neon e Personalização da Barra de Rolagem */
+        body {
+            background-color: #09070d;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .ruby-glow {
+            box-shadow: 0 0 20px rgba(225, 29, 72, 0.35);
+        }
+        
+        .ruby-text-glow {
+            text-shadow: 0 0 12px rgba(225, 29, 72, 0.7);
+        }
+
+        .purple-glow {
+            box-shadow: 0 0 25px rgba(147, 51, 234, 0.3);
+        }
+
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px -5px rgba(225, 29, 72, 0.3), 0 0 15px rgba(147, 51, 234, 0.25);
+            border-color: rgba(225, 29, 72, 0.6);
+        }
+
+        /* Padrão de Retícula (Screentone) para os quadrinhos */
+        .manga-halftone {
+            background-image: radial-gradient(#1f2937 1px, transparent 1px);
+            background-size: 6px 6px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09070d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b0764;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #e11d48;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-ruby selection:text-white">
+
+    <!-- Notificação Toast Customizada (Substitui alert) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ===================================================================== -->
+    <!-- BARRA DE NAVEGAÇÃO                                                    -->
+    <!-- ===================================================================== -->
+    <header class="sticky top-0 z-40 bg-obsidian/90 backdrop-blur-md border-b border-purple-900/40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 md:h-20 gap-4">
+                
+                <!-- Logo Ruby Loser -->
+                <a href="#" onclick="resetFilters()" class="flex items-center gap-3 group shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-ruby to-neonpurple flex items-center justify-center ruby-glow group-hover:scale-105 transition-transform">
+                        <!-- Ícone Gema Rubi / Coroa Quebrada SVG -->
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="6 3 18 3 22 9 12 21 2 9 6 3" fill="rgba(255,255,255,0.15)"/>
+                            <line x1="2" y1="9" x2="22" y2="9"/>
+                            <polyline points="12 21 8 9 12 3 16 9 12 21"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="font-gothic font-black text-xl sm:text-2xl tracking-wider bg-gradient-to-r from-white via-rose-200 to-ruby bg-clip-text text-transparent ruby-text-glow">
+                            RUBY LOSER
+                        </span>
+                        <span class="block text-[10px] uppercase tracking-[0.25em] text-purple-400 font-semibold -mt-1">
+                            Scanlator & Traduções
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Barra de Busca Desktop -->
+                <div class="hidden md:flex flex-1 max-w-md mx-4">
+                    <div class="relative w-full">
+                        <input type="text" id="search-input" placeholder="Buscar mangá, manhwa ou tag..." 
+                            class="w-full bg-void/90 border border-purple-800/50 focus:border-ruby rounded-full py-2 pl-10 pr-4 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-ruby/30 transition-all">
+                        <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Links de Navegação -->
+                <nav class="flex items-center gap-2 sm:gap-6 text-sm font-medium">
+                    <a href="#catalogo" class="text-gray-300 hover:text-ruby transition-colors px-2 py-1">Catálogo</a>
+                    <a href="#sobre-ruby" class="text-gray-300 hover:text-neonpurple-glow transition-colors px-2 py-1">Sobre a Ruby</a>
+                    <button onclick="openReader(0, 0)" class="hidden sm:inline-flex items-center gap-1.5 bg-ruby/20 hover:bg-ruby text-ruby hover:text-white border border-ruby/50 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all">
+                        <span class="w-2 h-2 rounded-full bg-ruby animate-ping"></span>
+                        Ler Último Lançamento
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Barra de Busca Mobile -->
+            <div class="md:hidden pb-3">
+                <div class="relative w-full">
+                    <input type="text" id="search-input-mobile" placeholder="Buscar mangá ou manhwa..." 
+                        class="w-full bg-void border border-purple-800/50 focus:border-ruby rounded-full py-2 pl-10 pr-4 text-sm text-gray-200 placeholder-gray-500 focus:outline-none">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- SEÇÃO DE DESTAQUE (HERO)                                              -->
+    <!-- ===================================================================== -->
+    <section class="relative overflow-hidden border-b border-purple-900/30">
+        <!-- Luzes de fundo -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-ruby/20 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute top-1/2 right-0 w-96 h-96 bg-neonpurple/20 rounded-full blur-[130px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 relative z-10">
+            <div class="bg-gradient-to-br from-void via-[#161024] to-obsidian border border-purple-800/40 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                
+                <!-- Capa em Destaque (SVG Ilustrado) -->
+                <div class="w-56 sm:w-64 shrink-0 relative group cursor-pointer" onclick="openMangaDetails(0)">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-ruby to-neonpurple rounded-2xl blur opacity-50 group-hover:opacity-90 transition duration-500"></div>
+                    <div id="hero-cover" class="relative rounded-2xl overflow-hidden border border-white/10 aspect-[3/4] bg-obsidian shadow-xl">
+                        <!-- Injetado via JS -->
+                    </div>
+                    <span class="absolute top-3 left-3 bg-ruby text-white text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg">
+                        Destaque da Ruby
+                    </span>
+                </div>
+
+                <!-- Informações do Destaque -->
+                <div class="flex-1 text-center lg:text-left">
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-2 mb-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-700/50">Manhwa</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/50">Fantasia Sombria</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-300 border border-rose-700/50">Romance</span>
+                        <span class="text-xs text-amber-400 font-bold ml-1">★ 4.98</span>
+                    </div>
+
+                    <h1 class="font-gothic text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight mb-3 leading-tight">
+                        A Vilã Perdedora do Trono de Rubi
+                    </h1>
+
+                    <p class="text-gray-300 text-sm sm:text-base leading-relaxed mb-5 max-w-2xl mx-auto lg:mx-0">
+                        Reencarnada como a duquesa falida destinada à guilhotina no capítulo 12, Scarlett decide abandonar a nobreza, abrir uma taverna clandestina e fazer um pacto com o arquimago mais perigoso do império.
+                    </p>
+
+                    <!-- Nota da Tradutora Ruby -->
+                    <div class="bg-obsidian/80 border-l-4 border-ruby rounded-r-xl p-4 mb-6 text-left max-w-2xl mx-auto lg:mx-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-xs font-bold uppercase tracking-wider text-ruby">Nota da Ruby (Tradutora):</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-gray-300 italic">
+                            "Gente, eu me identifiquei MUITO com a protagonista sendo uma completa perdedora no começo kkkk! Traduzi cada piada com muito carinho e adaptei os trocadilhos do coreano pra ficar perfeito em PT-BR. Leiam o Cap. 01!"
+                        </p>
+                    </div>
+
+                    <!-- Botões de Ação -->
+                    <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                        <button onclick="openReader(0, 0)" class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-ruby to-rose-700 hover:from-ruby-glow hover:to-ruby text-white font-bold text-sm sm:text-base shadow-lg ruby-glow transition-all flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                            Ler Capítulo 01 Agora
+                        </button>
+                        <button onclick="openMangaDetails(0)" class="px-6 py-3.5 rounded-xl bg-void hover:bg-purple-950/60 text-gray-200 border border-purple-700/50 font-semibold text-sm sm:text-base transition-all">
+                            Ver Lista de Capítulos
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- CATÁLOGO E FILTROS POR GÊNERO                                         -->
+    <!-- ===================================================================== -->
+    <main id="catalogo" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        <!-- Cabeçalho do Catálogo + Filtros -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h2 class="font-gothic text-2xl sm:text-3xl font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-7 bg-ruby rounded-full inline-block"></span>
+                    Obras Traduzidas pela Ruby
+                </h2>
+                <p class="text-sm text-gray-400 mt-1">Clique em qualquer obra para ver as notas da tradução e ler os capítulos.</p>
+            </div>
+
+            <!-- Botões de Filtro -->
+            <div id="genre-filters" class="flex flex-wrap gap-2">
+                <button data-genre="Todos" class="genre-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-ruby text-white shadow-md transition-all">
+                    Todos
+                </button>
+                <button data-genre="Ação" class="genre-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-void text-gray-300 border border-purple-900/50 hover:border-ruby/60 transition-all">
+                    Ação
+                </button>
+                <button data-genre="Fantasia" class="genre-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-void text-gray-300 border border-purple-900/50 hover:border-ruby/60 transition-all">
+                    Fantasia
+                </button>
+                <button data-genre="Romance" class="genre-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-void text-gray-300 border border-purple-900/50 hover:border-ruby/60 transition-all">
+                    Romance
+                </button>
+                <button data-genre="Seinen" class="genre-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-void text-gray-300 border border-purple-900/50 hover:border-ruby/60 transition-all">
+                    Seinen
+                </button>
+                <button data-genre="Shounen" class="genre-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-void text-gray-300 border border-purple-900/50 hover:border-ruby/60 transition-all">
+                    Shounen
+                </button>
+            </div>
+        </div>
+
+        <!-- Grade de Mangás -->
+        <div id="manga-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards gerados dinamicamente pelo JavaScript -->
+        </div>
+
+        <!-- Mensagem quando nenhum resultado for encontrado -->
+        <div id="empty-state" class="hidden text-center py-16 bg-void/50 rounded-3xl border border-purple-900/30">
+            <p class="text-4xl mb-3">🥀</p>
+            <h3 class="text-lg font-bold text-white">Nenhum mangá encontrado</h3>
+            <p class="text-sm text-gray-400 mt-1">A Ruby ainda não traduziu nada com esse filtro ou termo.</p>
+            <button onclick="resetFilters()" class="mt-4 px-5 py-2 bg-ruby/20 text-ruby border border-ruby/40 rounded-xl text-sm font-semibold hover:bg-ruby hover:text-white transition-all">
+                Limpar Filtros
+            </button>
+        </div>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- SEÇÃO SOBRE A RUBY / SCANLATOR                                        -->
+    <!-- ===================================================================== -->
+    <section id="sobre-ruby" class="border-t border-purple-900/40 bg-void/60 py-16">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-gradient-to-br from-obsidian via-void to-[#1c102b] border border-purple-800/40 rounded-3xl p-8 md:p-10 purple-glow">
+                <div class="flex flex-col md:flex-row items-center gap-8">
+                    
+                    <!-- Avatar Ilustrado da Ruby -->
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 shrink-0 rounded-full p-1 bg-gradient-to-tr from-ruby via-neonpurple to-rose-400 shadow-xl">
+                        <div class="w-full h-full rounded-full bg-obsidian flex items-center justify-center overflow-hidden relative">
+                            <!-- Ilustração SVG Estilo Anime Gótico da Ruby -->
+                            <svg viewBox="0 0 120 120" class="w-full h-full">
+                                <defs>
+                                    <radialGradient id="rubyBg" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#3b0764"/>
+                                        <stop offset="100%" stop-color="#09070d"/>
+                                    </radialGradient>
+                                </defs>
+                                <rect width="120" height="120" fill="url(#rubyBg)"/>
+                                <!-- Cabelo traseiro -->
+                                <path d="M25 60 Q20 105 35 115 L85 115 Q100 105 95 60 Z" fill="#181224"/>
+                                <!-- Rosto -->
+                                <path d="M40 50 Q40 85 60 90 Q80 85 80 50 Z" fill="#fde6d8"/>
+                                <!-- Olhos Rubi -->
+                                <ellipse cx="50" cy="64" rx="4.5" ry="5.5" fill="#e11d48"/>
+                                <circle cx="49" cy="62" r="1.5" fill="#ffffff"/>
+                                <ellipse cx="70" cy="64" rx="4.5" ry="5.5" fill="#e11d48"/>
+                                <circle cx="69" cy="62" r="1.5" fill="#ffffff"/>
+                                <!-- Expressão fofa/cansada -->
+                                <path d="M56 77 Q60 80 64 77" stroke="#9f1239" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                <!-- Franja -->
+                                <path d="M35 55 Q40 25 60 25 Q80 25 85 55 L75 45 L65 56 L58 43 L48 56 L42 46 Z" fill="#231934"/>
+                                <!-- Presilha de Rubi -->
+                                <polygon points="76,42 82,39 85,45 79,48" fill="#ff1e56"/>
+                                <!-- Fones de ouvido -->
+                                <rect x="31" y="52" width="7" height="18" rx="3" fill="#e11d48"/>
+                                <rect x="82" y="52" width="7" height="18" rx="3" fill="#e11d48"/>
+                                <path d="M34 52 Q60 15 86 52" stroke="#9333ea" stroke-width="4" fill="none"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Texto Sobre o Projeto -->
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ruby/15 border border-ruby/40 text-ruby text-xs font-bold uppercase tracking-wider mb-3">
+                            Solo Scanlator • Feito com Café & Insônia
+                        </div>
+                        <h2 class="font-gothic text-2xl sm:text-3xl font-bold text-white mb-3">
+                            Quem é a <span class="text-ruby">Ruby</span>?
+                        </h2>
+                        <p class="text-gray-300 text-sm sm:text-base leading-relaxed mb-4">
+                            Oi! Eu sou a <strong>Ruby</strong>, uma leitora compulsiva que cansou de esperar traduções abandonadas e decidiu criar a <strong>Ruby Loser</strong> — uma scan independente feita por uma pessoa só (eu mesma: tradutora, cleaner, typesetter e revisora nas horas vagas).
+                        </p>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                            O nome <em>"Ruby Loser"</em> nasceu porque eu sempre torço pelos personagens secundários perdedores e vilãs injustiçadas. Aqui você encontra traduções naturais em português, notas culturais no fim dos capítulos e zero anúncios invasivos!
+                        </p>
+
+                        <!-- Estatísticas da Scan -->
+                        <div class="grid grid-cols-3 gap-3 sm:gap-6 max-w-md mx-auto md:mx-0">
+                            <div class="bg-obsidian/80 border border-purple-900/50 rounded-2xl p-3 text-center">
+                                <span class="block text-xl sm:text-2xl font-black text-ruby">6</span>
+                                <span class="text-[11px] text-gray-400 uppercase tracking-wider">Obras Ativas</span>
+                            </div>
+                            <div class="bg-obsidian/80 border border-purple-900/50 rounded-2xl p-3 text-center">
+                                <span class="block text-xl sm:text-2xl font-black text-neonpurple-glow">100%</span>
+                                <span class="text-[11px] text-gray-400 uppercase tracking-wider">Feito à Mão</span>
+                            </div>
+                            <div class="bg-obsidian/80 border border-purple-900/50 rounded-2xl p-3 text-center">
+                                <span class="block text-xl sm:text-2xl font-black text-rose-400">∞</span>
+                                <span class="text-[11px] text-gray-400 uppercase tracking-wider">Xícaras de Café</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- RODAPÉ                                                                -->
+    <!-- ===================================================================== -->
+    <footer class="border-t border-purple-900/30 bg-obsidian py-8 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-gothic text-sm text-gray-300 font-bold mb-1">RUBY LOSER SCANLATOR</p>
+            <p>Projeto de fã para fãs. Apoie os autores oficiais sempre que possível.</p>
+            <p class="mt-2 text-gray-600">© 2026 Ruby Loser — Traduzido com ♥ por Ruby.</p>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DE DETALHES DO MANGÁ & LISTA DE CAPÍTULOS                       -->
+    <!-- ===================================================================== -->
+    <div id="details-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-void border border-purple-700/50 rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl relative my-8 animate-[fadeIn_0.2s_ease-out]">
+            
+            <!-- Botão Fechar -->
+            <button onclick="closeMangaDetails()" class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-obsidian/90 hover:bg-ruby text-gray-300 hover:text-white flex items-center justify-center border border-purple-800/50 transition-colors">
+                ✕
+            </button>
+
+            <div id="details-content" class="p-6 sm:p-8">
+                <!-- Conteúdo injetado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL LEITOR DE MANGÁ INTERATIVO                                      -->
+    <!-- ===================================================================== -->
+    <div id="reader-modal" class="fixed inset-0 z-50 hidden bg-[#050408] flex flex-col">
+        
+        <!-- Barra Superior do Leitor -->
+        <div class="bg-void border-b border-purple-900/50 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="closeReader()" class="px-3 py-1.5 rounded-xl bg-obsidian hover:bg-ruby text-gray-300 hover:text-white border border-purple-800/50 text-xs sm:text-sm font-semibold transition-colors flex items-center gap-1">
+                    ← Voltar
+                </button>
+                <div>
+                    <h3 id="reader-manga-title" class="text-sm sm:text-base font-bold text-white line-clamp-1">Título do Mangá</h3>
+                    <p id="reader-chapter-title" class="text-xs text-ruby font-semibold">Capítulo 01</p>
+                </div>
+            </div>
+
+            <!-- Controles do Leitor -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- Seletor de Capítulo -->
+                <select id="reader-chapter-select" onchange="changeChapterFromSelect(this.value)" class="bg-obsidian border border-purple-800/60 text-gray-200 text-xs sm:text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-ruby">
+                </select>
+
+                <!-- Alternar Modo de Leitura -->
+                <button id="toggle-mode-btn" onclick="toggleReadingMode()" class="px-3 py-1.5 rounded-xl bg-purple-950/80 hover:bg-neonpurple text-purple-200 hover:text-white border border-purple-700/50 text-xs font-semibold transition-all flex items-center gap-1.5">
+                    <span id="mode-icon">📄</span>
+                    <span id="mode-label">Página Única</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área Principal de Leitura -->
+        <div id="reader-viewport" class="flex-1 overflow-y-auto px-2 sm:px-6 py-6 flex flex-col items-center">
+            
+            <!-- Container das Páginas de Quadrinhos -->
+            <div id="comic-pages-container" class="w-full max-w-2xl flex flex-col items-center gap-6">
+                <!-- Páginas ilustradas em SVG geradas dinamicamente -->
+            </div>
+
+            <!-- Navegação Inferior de Páginas / Capítulos -->
+            <div class="w-full max-w-2xl mt-8 bg-void border border-purple-900/50 rounded-2xl p-4 flex items-center justify-between gap-3">
+                <button id="prev-page-btn" onclick="prevPage()" class="px-4 py-2.5 rounded-xl bg-obsidian hover:bg-purple-900/50 disabled:opacity-40 text-gray-200 text-xs sm:text-sm font-semibold border border-purple-800/40 transition-all">
+                    ← Anterior
+                </button>
+                
+                <span id="page-indicator" class="text-xs sm:text-sm font-bold text-gray-300">
+                    Página 1 de 4
+                </span>
+
+                <button id="next-page-btn" onclick="nextPage()" class="px-4 py-2.5 rounded-xl bg-ruby hover:bg-ruby-glow text-white text-xs sm:text-sm font-semibold shadow-md transition-all">
+                    Próxima →
+                </button>
+            </div>
+
+            <!-- Nota Final da Ruby no Capítulo -->
+            <div class="w-full max-w-2xl mt-6 bg-gradient-to-r from-rose-950/40 to-purple-950/40 border border-ruby/40 rounded-2xl p-5">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-0.5 rounded bg-ruby text-white text-[10px] font-bold uppercase">Recado da Ruby</span>
+                    <span class="text-xs text-gray-400">Fim do Capítulo</span>
+                </div>
+                <p id="reader-ruby-note" class="text-sm text-gray-200 italic">
+                    "Obrigada por lerem até aqui! Deixem um comentário abaixo dizendo o que acharam da tradução!"
+                </p>
+            </div>
+
+            <!-- Seção de Comentários para a Ruby -->
+            <div class="w-full max-w-2xl mt-6 mb-12 bg-void border border-purple-900/40 rounded-2xl p-5">
+                <h4 class="font-bold text-white text-base mb-4 flex items-center gap-2">
+                    💬 Comentários para a Ruby (<span id="comment-count">0</span>)
+                </h4>
+
+                <!-- Formulário de Comentário -->
+                <form onsubmit="submitComment(event)" class="mb-6 space-y-3">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="comment-author" placeholder="Seu apelido (ex: LeitorNoturno)" required
+                            class="sm:w-1/3 bg-obsidian border border-purple-800/50 rounded-xl px-3.5 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ruby">
+                        <input type="text" id="comment-text" placeholder="Escreva um elogio, surto ou sugestão para a Ruby..." required
+                            class="flex-1 bg-obsidian border border-purple-800/50 rounded-xl px-3.5 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-ruby">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-neonpurple hover:bg-purple-500 text-white text-xs sm:text-sm font-bold transition-all">
+                            Enviar Comentário
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Lista de Comentários -->
+                <div id="comments-list" class="space-y-3">
+                    <!-- Comentários inseridos via JS -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT: DADOS, CAPAS SVG E LÓGICA DO LEITOR                       -->
+    <!-- ===================================================================== -->
+    <script>
+        // Banco de Dados de Mangás/Manhwas de Exemplo da Ruby Loser
+        const MANGAS = [
+            {
+                id: 0,
+                title: "A Vilã Perdedora do Trono de Rubi",
+                altTitle: "The Loser Villainess of the Ruby Throne",
+                type: "Manhwa",
+                status: "Em Lançamento",
+                genres: ["Fantasia", "Romance"],
+                rating: "4.98",
+                synopsis: "Reencarnada como a duquesa falida destinada à guilhotina no capítulo 12, Scarlett decide abandonar a nobreza, abrir uma taverna clandestina e fazer um pacto com o arquimago mais perigoso do império.",
+                rubyNote: "Gente, eu me identifiquei MUITO com a protagonista sendo uma completa perdedora no começo kkkk! Traduzi cada piada com muito carinho e adaptei os trocadilhos do coreano pra ficar perfeito em PT-BR.",
+                coverTheme: { bg1: "#4c0519", bg2: "#1e1b4b", accent: "#ff1e56", motif: "crown" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "Falida e Reencarnada",
+                        date: "Hoje",
+                        rubyEndNote: "Olha a cara de desespero dela na página 3! Passei 2 horas redesenhando aquela onomatopeia de 'FALIDA' em português, espero que gostem!",
+                        pages: [
+                            { scene: "throne_shock", speaker: "SCARLETT", dialogue: "ESPERA AÍ... EU REENCARNEI JUSTO NA VILÃ QUE TEM 3 MILHÕES DE MOEDAS DE OURO EM DÍVIDAS?!", sfx: "CHOCADA!!" },
+                            { scene: "mage_appear", speaker: "ARQUIMAGO Kael", dialogue: "Você me invocou às 3 da manhã apenas para pedir um empréstimo sem juros, Lady Scarlett?", sfx: "VWOOSH..." },
+                            { scene: "tavern_plan", speaker: "SCARLETT", dialogue: "Esqueça a vingança contra o príncipe! Nós vamos abrir a melhor taverna do submundo!", sfx: "BRILHO ✨" },
+                            { scene: "toast_end", speaker: "NARRADOR (RUBY)", dialogue: "E assim começou a lenda da duquesa mais quebrada — e perigosa — do império. Continua no Cap. 02!", sfx: "TIM-TIM!" }
+                        ]
+                    },
+                    {
+                        num: "Cap. 02",
+                        title: "O Primeiro Cliente Suspeito",
+                        date: "Há 3 dias",
+                        rubyEndNote: "O Kael lavando pratos nesse capítulo é tudo pra mim kkkkk.",
+                        pages: [
+                            { scene: "tavern_plan", speaker: "ARQUIMAGO Kael", dialogue: "Eu sou o mestre da Torre Negra... por que estou usando um avental rosa?", sfx: "SUSPIRO" },
+                            { scene: "mage_appear", speaker: "SCARLETT", dialogue: "Porque você quebrou três taças de cristal mágico! Agora sorria para os clientes!", sfx: "CLINK!" },
+                            { scene: "toast_end", speaker: "CLIENTE MISTERIOSO", dialogue: "Ouvi dizer que aqui servem poções que curam até coração partido...", sfx: "PASSOS..." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 1,
+                title: "Crônicas do Caçador de Eclipses",
+                altTitle: "Eclipse Hunter Chronicles",
+                type: "Mangá",
+                status: "Em Lançamento",
+                genres: ["Ação", "Shounen", "Fantasia"],
+                rating: "4.92",
+                synopsis: "Em uma Tóquio mergulhada em eclipses eternos, Ren herda uma lâmina amaldiçoada que devora memórias em troca de poder absoluto para caçar monstros dimensionais.",
+                rubyNote: "As cenas de luta desse mangá são INSANAS! Deu um trabalhão limpar os balões cheios de efeitos sonoros, mas ficou lindão.",
+                coverTheme: { bg1: "#1e1b4b", bg2: "#09070d", accent: "#c084fc", motif: "eclipse" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "A Lâmina da Meia-Noite",
+                        date: "Há 2 dias",
+                        rubyEndNote: "A arte desse autor lembra muito os clássicos sombrios dos anos 2000. Já estou traduzindo o Cap. 02!",
+                        pages: [
+                            { scene: "eclipse_sky", speaker: "REN", dialogue: "O céu sangrou de novo... Se eu sacar esta espada, vou esquecer o rosto dela.", sfx: "BADUMP" },
+                            { scene: "sword_slash", speaker: "ESPADA ECLIPSE", dialogue: "OFEREÇA UMA LEMBRANÇA E EU CORTAREI A PRÓPRIA NOITE POR VOCÊ.", sfx: "ZAAASH!!" },
+                            { scene: "toast_end", speaker: "REN", dialogue: "Que seja. Venham, demônios do eclipse!", sfx: "ESTRONDOS" }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Noturno para um Coração de Vidro",
+                altTitle: "Nocturne for a Glass Heart",
+                type: "Mangá",
+                status: "Em Lançamento",
+                genres: ["Seinen", "Romance"],
+                rating: "4.95",
+                synopsis: "Um pianista que perdeu a audição parcial e uma florista noturna que só abre sua loja após a meia-noite descobrem que suas cicatrizes combinam perfeitamente.",
+                rubyNote: "Preparem os lencinhos! É meu projeto favorito de madrugada ouvindo lo-fi.",
+                coverTheme: { bg1: "#31102f", bg2: "#0f172a", accent: "#f43f5e", motif: "rose" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "Pétalas às 00:00",
+                        date: "Há 5 dias",
+                        rubyEndNote: "Tradução poética feita com muito cuidado para manter a melancolia original.",
+                        pages: [
+                            { scene: "night_flower", speaker: "HANA", dialogue: "Ninguém compra lírios negros à meia-noite... exceto você.", sfx: "SINO DA PORTA" },
+                            { scene: "piano_keys", speaker: "SOU", dialogue: "É o único horário em que o barulho do mundo para e eu consigo ouvir o silêncio.", sfx: "PLIM..." },
+                            { scene: "toast_end", speaker: "HANA", dialogue: "Então fique até o amanhecer. O chá já está pronto.", sfx: "VAPOR~" }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Protocolo Fantasma: Neón 2099",
+                altTitle: "Ghost Protocol: Neon 2099",
+                type: "Manhwa",
+                status: "Em Lançamento",
+                genres: ["Ação", "Seinen"],
+                rating: "4.89",
+                synopsis: "Uma hacker cibernética considerada 'obsoleta' pelas megacorporações invade o servidor central da cidade para resgatar a consciência digital de seu irmão.",
+                rubyNote: "Cheio de gírias cyberpunk! Adaptei tudo para soar bem natural em português.",
+                coverTheme: { bg1: "#2e1065", bg2: "#09070d", accent: "#a855f7", motif: "cyber" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "Erro 404: Alma Não Encontrada",
+                        date: "Semana passada",
+                        rubyEndNote: "Adoro protagonistas hackers! Quem mais curte cyberpunk?",
+                        pages: [
+                            { scene: "cyber_grid", speaker: "VEX", dialogue: "Firewall rompido em 4 segundos. Eles realmente subestimaram uma 'perdedora' da Zona Baixa.", sfx: "BEEP-BEEP" },
+                            { scene: "sword_slash", speaker: "SISTEMA CENTRAL", dialogue: "ALERTA DE INTRUSÃO. ELIMINAR INVASORA IMEDIATAMENTE.", sfx: "ALARME!!" }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "O Clube dos Ocultistas Reprovados",
+                altTitle: "Flunked Occult Club",
+                type: "Mangá",
+                status: "Em Lançamento",
+                genres: ["Shounen", "Fantasia"],
+                rating: "4.85",
+                synopsis: "Quatro estudantes sem talento mágico nenhum fundam um clube escolar para invocar espíritos de rank baixo, mas acabam invocando o Rei Demônio aposentado.",
+                rubyNote: "Comédia pura! Eu rio sozinha traduzindo os diálogos desse quarteto.",
+                coverTheme: { bg1: "#4a044e", bg2: "#170924", accent: "#e879f9", motif: "star" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "Invocação de Recuperação",
+                        date: "Semana passada",
+                        rubyEndNote: "O Rei Demônio pedindo delivery de lamén é impagável.",
+                        pages: [
+                            { scene: "throne_shock", speaker: "REI DEMÔNIO", dialogue: "Quem ousou interromper minha soneca milenar... ei, isso é lamén instantâneo?", sfx: "POOF!" },
+                            { scene: "toast_end", speaker: "CLUBE OCULTISTA", dialogue: "POR FAVOR, NOS AJUDE A PASSAR NA PROVA DE ALQUIMIA!", sfx: "REVERÊNCIA" }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 5,
+                title: "Cartas para um Cavaleiro Esquecido",
+                altTitle: "Letters to a Forgotten Knight",
+                type: "Manhwa",
+                status: "Concluído",
+                genres: ["Romance", "Fantasia"],
+                rating: "4.99",
+                synopsis: "Durante dez anos, uma escriba real envia cartas para a fronteira norte sem saber que o cavaleiro destinatário já havia se tornado uma lenda imortal.",
+                rubyNote: "Obra curta e fechadinha em poucos capítulos. Vale cada segundo!",
+                coverTheme: { bg1: "#7f1d1d", bg2: "#1e1b4b", accent: "#fb7185", motif: "rose" },
+                chapters: [
+                    {
+                        num: "Cap. 01",
+                        title: "Tinta Carmesim",
+                        date: "Concluído",
+                        rubyEndNote: "Obra finalizada com sucesso pela Ruby Loser Scan!",
+                        pages: [
+                            { scene: "night_flower", speaker: "ELENA", dialogue: "Mais um inverno passou no norte. Você ainda guarda minha primeira carta?", sfx: "ESCREVENDO..." },
+                            { scene: "mage_appear", speaker: "CAVALEIRO ALDRIC", dialogue: "Cada palavra sua foi a armadura que me manteve vivo, Elena.", sfx: "VENTO GELADO" }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Estado da Aplicação
+        let currentGenre = "Todos";
+        let searchQuery = "";
+        let activeMangaIndex = 0;
+        let activeChapterIndex = 0;
+        let currentPageIndex = 0;
+        let readingMode = "single"; // 'single' (Página Única) ou 'webtoon' (Cascata)
+
+        // Comentários iniciais simulados por capítulo
+        const commentsStore = {
+            "0-0": [
+                { author: "Darkness_BR", text: "Ruby você é uma lenda!! A adaptação das piadas ficou muito boa kkkkk", time: "Há 15 min" },
+                { author: "LadyScarlettStan", text: "Melhor scanlator! Já favoritei o site pra acompanhar tudo.", time: "Há 1 hora" }
+            ],
+            "1-0": [
+                { author: "Kurogane", text: "Que traço lindo! Valeu por traduzir essa pérola Ruby.", time: "Há 3 horas" }
+            ]
+        };
+
+        // =========================================================================
+        // GERADOR DE CAPAS ARTÍSTICAS EM SVG (SEM LINKS QUEBRADOS)
+        // =========================================================================
+        function generateCoverSVG(manga) {
+            const { bg1, bg2, accent, motif } = manga.coverTheme;
+            let centerArt = "";
+
+            if (motif === "crown") {
+                centerArt = `
+                    <circle cx="150" cy="180" r="75" fill="${accent}" fill-opacity="0.15"/>
+                    <path d="M95 195 L110 135 L135 165 L150 120 L165 165 L190 135 L205 195 Z" fill="none" stroke="${accent}" stroke-width="4" stroke-linejoin="round"/>
+                    <polygon points="150,210 162,225 150,240 138,225" fill="${accent}"/>
+                `;
+            } else if (motif === "eclipse") {
+                centerArt = `
+                    <circle cx="150" cy="175" r="65" fill="${accent}" fill-opacity="0.25"/>
+                    <circle cx="150" cy="175" r="52" fill="#09070d" stroke="${accent}" stroke-width="3"/>
+                    <line x1="80" y1="245" x2="220" y2="105" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+                `;
+            } else if (motif === "rose") {
+                centerArt = `
+                    <circle cx="150" cy="175" r="70" fill="${accent}" fill-opacity="0.15"/>
+                    <path d="M150 130 C175 130 185 165 150 195 C115 165 125 130 150 130 Z" fill="none" stroke="${accent}" stroke-width="3.5"/>
+                    <path d="M150 195 L150 250 M150 220 L170 208 M150 232 L130 220" stroke="${accent}" stroke-width="3" stroke-linecap="round"/>
+                `;
+            } else if (motif === "cyber") {
+                centerArt = `
+                    <polygon points="150,115 205,147 205,212 150,245 95,212 95,147" fill="none" stroke="${accent}" stroke-width="3"/>
+                    <circle cx="150" cy="180" r="24" fill="${accent}" fill-opacity="0.3" stroke="#fff" stroke-width="2"/>
+                    <line x1="70" y1="180" x2="230" y2="180" stroke="${accent}" stroke-width="1.5" stroke-dasharray="6 4"/>
+                `;
+            } else {
+                centerArt = `
+                    <polygon points="150,115 165,160 212,160 174,188 188,232 150,205 112,232 126,188 88,160 135,160" fill="none" stroke="${accent}" stroke-width="3"/>
+                `;
+            }
+
+            return `
+                <svg viewBox="0 0 300 400" class="w-full h-full object-cover select-none">
+                    <defs>
+                        <linearGradient id="grad-${manga.id}" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="${bg1}"/>
+                            <stop offset="100%" stop-color="${bg2}"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="300" height="400" fill="url(#grad-${manga.id})"/>
+                    <!-- Moldura Ornamental -->
+                    <rect x="14" y="14" width="272" height="372" rx="12" fill="none" stroke="${accent}" stroke-opacity="0.4" stroke-width="1.5"/>
+                    ${centerArt}
+                    <!-- Selo Ruby Loser -->
+                    <text x="150" y="42" text-anchor="middle" fill="#ffffff" fill-opacity="0.7" font-family="Inter, sans-serif" font-size="10" font-weight="700" letter-spacing="3">
+                        RUBY LOSER EDITION
+                    </text>
+                    <!-- Título na Capa -->
+                    <foreignObject x="22" y="275" width="256" height="105">
+                        <div xmlns="http://www.w3.org/1999/xhtml" style="color: white; font-family: 'Cinzel', serif; font-weight: 900; font-size: 17px; line-height: 1.2; text-align: center; text-shadow: 0 2px 10px rgba(0,0,0,0.9);">
+                            ${manga.title}
+                        </div>
+                    </foreignObject>
+                </svg>
+            `;
+        }
+
+        // =========================================================================
+        // GERADOR DE PÁGINAS DE QUADRINHOS (ARTE SIMULADA + BALÕES PT-BR)
+        // =========================================================================
+        function generateComicPageSVG(pageData, pageNum, totalPages, mangaTitle) {
+            return `
+                <div class="w-full bg-white text-black rounded-xl overflow-hidden shadow-2xl border-4 border-gray-900 manga-halftone relative">
+                    <!-- Cabeçalho da Página -->
+                    <div class="bg-gray-950 text-gray-300 px-4 py-1.5 flex justify-between items-center text-[11px] font-mono">
+                        <span>RUBY LOSER SCAN • ${mangaTitle.toUpperCase()}</span>
+                        <span class="text-ruby font-bold">PÁG. ${pageNum}/${totalPages}</span>
+                    </div>
+
+                    <!-- Quadro Ilustrado -->
+                    <svg viewBox="0 0 600 720" class="w-full h-auto block">
+                        <defs>
+                            <linearGradient id="sky-${pageNum}" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#18122b"/>
+                                <stop offset="100%" stop-color="#4c0519"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Quadro Superior Dramático -->
+                        <rect x="20" y="20" width="560" height="310" fill="url(#sky-${pageNum})" stroke="#09070d" stroke-width="5"/>
+                        
+                        <!-- Linhas de Velocidade / Ação no Quadro -->
+                        <g stroke="#ffffff" stroke-opacity="0.25" stroke-width="2">
+                            <line x1="20" y1="20" x2="180" y2="140"/>
+                            <line x1="580" y1="20" x2="420" y2="140"/>
+                            <line x1="20" y1="330" x2="180" y2="210"/>
+                            <line x1="580" y1="330" x2="420" y2="210"/>
+                        </g>
+
+                        <!-- Silhueta Expressiva do Personagem -->
+                        <circle cx="300" cy="185" r="85" fill="#e11d48" fill-opacity="0.25"/>
+                        <path d="M220 330 Q230 220 300 220 Q370 220 380 330 Z" fill="#09070d"/>
+                        <circle cx="300" cy="165" r="46" fill="#fde6d8" stroke="#09070d" stroke-width="3"/>
+                        <!-- Cabelo estilo mangá -->
+                        <path d="M250 165 Q255 105 300 105 Q345 105 350 165 L335 145 L318 168 L300 142 L282 168 L265 145 Z" fill="#1e1b4b"/>
+                        <!-- Olhos brilhantes -->
+                        <ellipse cx="283" cy="168" rx="7" ry="5" fill="#e11d48"/>
+                        <ellipse cx="317" cy="168" rx="7" ry="5" fill="#e11d48"/>
+                        <circle cx="281" cy="167" r="2" fill="#fff"/>
+                        <circle cx="315" cy="167" r="2" fill="#fff"/>
+
+                        <!-- Onomatopeia Traduzida (SFX) -->
+                        <text x="45" y="75" fill="#ff1e56" stroke="#ffffff" stroke-width="1.5" font-family="'Comic Neue', cursive" font-weight="900" font-size="34" transform="rotate(-8 45 75)">
+                            ${pageData.sfx}
+                        </text>
+
+                        <!-- Quadro Inferior (Diálogo Principal) -->
+                        <rect x="20" y="350" width="560" height="340" fill="#f8fafc" stroke="#09070d" stroke-width="5"/>
+                        
+                        <!-- Retícula decorativa no canto -->
+                        <circle cx="500" cy="610" r="110" fill="#e11d48" fill-opacity="0.1"/>
+
+                        <!-- Placa de Nome do Personagem -->
+                        <rect x="45" y="375" width="210" height="34" rx="6" fill="#09070d"/>
+                        <text x="150" y="397" text-anchor="middle" fill="#ff1e56" font-family="Inter, sans-serif" font-weight="800" font-size="14" letter-spacing="1.5">
+                            ${pageData.speaker}
+                        </text>
+
+                        <!-- Balão de Fala Estilo Mangá -->
+                        <rect x="45" y="425" width="510" height="190" rx="45" fill="#ffffff" stroke="#09070d" stroke-width="4"/>
+                        <polygon points="260,425 285,390 305,425" fill="#ffffff" stroke="#09070d" stroke-width="4"/>
+                        <line x1="262" y1="425" x2="303" y2="425" stroke="#ffffff" stroke-width="6"/>
+
+                        <!-- Texto do Diálogo em Português -->
+                        <foreignObject x="75" y="445" width="450" height="150">
+                            <div xmlns="http://www.w3.org/1999/xhtml" style="height: 100%; display: flex; align-items: center; justify-content: center; text-align: center; font-family: 'Comic Neue', cursive; font-weight: 700; font-size: 23px; line-height: 1.3; color: #09070d;">
+                                "${pageData.dialogue}"
+                            </div>
+                        </foreignObject>
+
+                        <!-- Marca d'água discreta da tradutora -->
+                        <text x="565" y="675" text-anchor="end" fill="#64748b" font-family="Inter, sans-serif" font-size="11" font-weight="600">
+                            Traduzido & Editado por Ruby (Ruby Loser)
+                        </text>
+                    </svg>
+                </div>
+            `;
+        }
+
+        // =========================================================================
+        // RENDERIZAÇÃO DO CATÁLOGO E HERO
+        // =========================================================================
+        function renderHeroCover() {
+            const heroContainer = document.getElementById("hero-cover");
+            if (heroContainer) {
+                heroContainer.innerHTML = generateCoverSVG(MANGAS[0]);
+            }
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById("manga-grid");
+            const emptyState = document.getElementById("empty-state");
+
+            const filtered = MANGAS.filter(manga => {
+                const matchesGenre = currentGenre === "Todos" || manga.genres.includes(currentGenre);
+                const matchesSearch = manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                      manga.genres.some(g => g.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                                      manga.type.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesGenre && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            }
+
+            emptyState.classList.add("hidden");
+            grid.innerHTML = filtered.map(manga => `
+                <article class="bg-void border border-purple-900/40 rounded-2xl overflow-hidden flex flex-col card-hover group">
+                    <div class="flex p-4 gap-4">
+                        <!-- Capa Miniatura -->
+                        <div onclick="openMangaDetails(${manga.id})" class="w-28 sm:w-32 aspect-[3/4] rounded-xl overflow-hidden shrink-0 cursor-pointer border border-white/10 relative">
+                            ${generateCoverSVG(manga)}
+                            <span class="absolute bottom-1.5 left-1.5 bg-obsidian/90 text-[10px] font-bold px-2 py-0.5 rounded text-purple-300 border border-purple-700/40">
+                                ${manga.type}
+                            </span>
+                        </div>
+
+                        <!-- Infos -->
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                    <span class="text-[11px] font-semibold ${manga.status === 'Concluído' ? 'text-emerald-400' : 'text-ruby'}">
+                                        ● ${manga.status}
+                                    </span>
+                                    <span class="text-xs font-bold text-amber-400">★ ${manga.rating}</span>
+                                </div>
+
+                                <h3 onclick="openMangaDetails(${manga.id})" class="font-gothic font-bold text-base sm:text-lg text-white group-hover:text-ruby transition-colors cursor-pointer line-clamp-2 leading-snug">
+                                    ${manga.title}
+                                </h3>
+
+                                <div class="flex flex-wrap gap-1.5 mt-2">
+                                    ${manga.genres.map(g => `
+                                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-obsidian text-gray-300 border border-purple-900/50">${g}</span>
+                                    `).join("")}
+                                </div>
+                            </div>
+
+                            <p class="text-xs text-gray-400 line-clamp-2 mt-2">
+                                ${manga.synopsis}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Nota rápida da Ruby & Capítulos -->
+                    <div class="px-4 pb-4 mt-auto space-y-2">
+                        <div class="bg-obsidian/70 rounded-xl p-2.5 border border-purple-900/30 text-[11px] text-gray-300 italic line-clamp-2">
+                            <span class="text-ruby font-bold not-italic">Ruby diz:</span> "${manga.rubyNote}"
+                        </div>
+
+                        <!-- Últimos Capítulos Clicáveis -->
+                        <div class="space-y-1.5 pt-1">
+                            ${manga.chapters.slice(0, 2).map((chap, idx) => `
+                                <button onclick="openReader(${manga.id}, ${idx})" class="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-obsidian hover:bg-ruby/20 border border-purple-900/40 hover:border-ruby/50 text-xs transition-all group/btn">
+                                    <span class="font-semibold text-gray-200 group-hover/btn:text-white truncate">
+                                        ${chap.num} — ${chap.title}
+                                    </span>
+                                    <span class="text-[10px] text-gray-500 group-hover/btn:text-ruby shrink-0 ml-2">
+                                        ${chap.date} →
+                                    </span>
+                                </button>
+                            `).join("")}
+                        </div>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        // =========================================================================
+        // MODAL DE DETALHES DA OBRA
+        // =========================================================================
+        function openMangaDetails(mangaId) {
+            const manga = MANGAS.find(m => m.id === mangaId);
+            if (!manga) return;
+
+            const modal = document.getElementById("details-modal");
+            const content = document.getElementById("details-content");
+
+            content.innerHTML = `
+                <div class="flex flex-col sm:flex-row gap-6">
+                    <div class="w-40 sm:w-48 aspect-[3/4] rounded-2xl overflow-hidden shrink-0 mx-auto sm:mx-0 border border-purple-700/40 shadow-xl">
+                        ${generateCoverSVG(manga)}
+                    </div>
+
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-ruby text-white">${manga.type}</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-700/50">${manga.status}</span>
+                            <span class="text-xs font-bold text-amber-400">★ ${manga.rating}</span>
+                        </div>
+
+                        <h2 class="font-gothic text-2xl sm:text-3xl font-black text-white mb-1">${manga.title}</h2>
+                        <p class="text-xs text-gray-400 mb-3">${manga.altTitle}</p>
+
+                        <div class="flex flex-wrap gap-1.5 mb-4">
+                            ${manga.genres.map(g => `<span class="text-xs px-2.5 py-1 rounded-lg bg-obsidian text-gray-300 border border-purple-800/50">${g}</span>`).join("")}
+                        </div>
+
+                        <p class="text-sm text-gray-300 leading-relaxed mb-4">${manga.synopsis}</p>
+
+                        <div class="bg-obsidian/90 border-l-4 border-ruby p-3.5 rounded-r-xl mb-5">
+                            <p class="text-xs font-bold text-ruby uppercase mb-1">Comentário da Ruby sobre a obra:</p>
+                            <p class="text-xs sm:text-sm text-gray-300 italic">"${manga.rubyNote}"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista Completa de Capítulos -->
+                <div class="mt-6 pt-6 border-t border-purple-900/40">
+                    <h3 class="font-bold text-white text-base mb-3 flex items-center justify-between">
+                        <span>Capítulos Traduzidos (${manga.chapters.length})</span>
+                        <span class="text-xs font-normal text-gray-400">Clique para abrir o leitor</span>
+                    </h3>
+                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        ${manga.chapters.map((chap, idx) => `
+                            <div onclick="closeMangaDetails(); openReader(${manga.id}, ${idx})" class="flex items-center justify-between p-3.5 rounded-xl bg-obsidian hover:bg-ruby/20 border border-purple-900/50 hover:border-ruby cursor-pointer transition-all">
+                                <div>
+                                    <span class="font-bold text-sm text-white">${chap.num}:</span>
+                                    <span class="text-sm text-gray-300 ml-1">${chap.title}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs text-gray-500">${chap.date}</span>
+                                    <span class="px-3 py-1 rounded-lg bg-ruby text-white text-xs font-bold">Ler</span>
+                                </div>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            `;
+
+            modal.classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeMangaDetails() {
+            document.getElementById("details-modal").classList.add("hidden");
+            document.body.style.overflow = "";
+        }
+
+        // =========================================================================
+        // LEITOR DE MANGÁ INTERATIVO
+        // =========================================================================
+        function openReader(mangaId, chapterIdx) {
+            activeMangaIndex = MANGAS.findIndex(m => m.id === mangaId);
+            if (activeMangaIndex === -1) activeMangaIndex = 0;
+            activeChapterIndex = chapterIdx;
+            currentPageIndex = 0;
+
+            const manga = MANGAS[activeMangaIndex];
+            const select = document.getElementById("reader-chapter-select");
+            select.innerHTML = manga.chapters.map((c, idx) => `
+                <option value="${idx}" ${idx === activeChapterIndex ? "selected" : ""}>
+                    ${c.num} - ${c.title}
+                </option>
+            `).join("");
+
+            renderReaderContent();
+            document.getElementById("reader-modal").classList.remove("hidden");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeReader() {
+            document.getElementById("reader-modal").classList.add("hidden");
+            document.body.style.overflow = "";
+        }
+
+        function changeChapterFromSelect(val) {
+            activeChapterIndex = parseInt(val, 10);
+            currentPageIndex = 0;
+            renderReaderContent();
+        }
+
+        function toggleReadingMode() {
+            readingMode = readingMode === "single" ? "webtoon" : "single";
+            const label = document.getElementById("mode-label");
+            const icon = document.getElementById("mode-icon");
+            
+            if (readingMode === "webtoon") {
+                label.textContent = "Cascata (Webtoon)";
+                icon.textContent = "📜";
+                showToast("Modo Cascata ativado! Role para ler tudo.");
+            } else {
+                label.textContent = "Página Única";
+                icon.textContent = "📄";
+                showToast("Modo Página Única ativado!");
+            }
+            renderReaderContent();
+        }
+
+        function renderReaderContent() {
+            const manga = MANGAS[activeMangaIndex];
+            const chapter = manga.chapters[activeChapterIndex];
+            const container = document.getElementById("comic-pages-container");
+            const pageIndicator = document.getElementById("page-indicator");
+            const prevBtn = document.getElementById("prev-page-btn");
+            const nextBtn = document.getElementById("next-page-btn");
+
+            document.getElementById("reader-manga-title").textContent = manga.title;
+            document.getElementById("reader-chapter-title").textContent = `${chapter.num} — ${chapter.title}`;
+            document.getElementById("reader-ruby-note").textContent = `"${chapter.rubyEndNote}"`;
+
+            if (readingMode === "webtoon") {
+                // Exibe todas as páginas em sequência vertical
+                container.innerHTML = chapter.pages.map((p, idx) => 
+                    generateComicPageSVG(p, idx + 1, chapter.pages.length, manga.title)
+                ).join("");
+                pageIndicator.textContent = `Modo Cascata (${chapter.pages.length} páginas)`;
+                prevBtn.disabled = activeChapterIndex === 0;
+                prevBtn.textContent = "← Cap. Anterior";
+                nextBtn.textContent = activeChapterIndex < manga.chapters.length - 1 ? "Próximo Cap. →" : "Concluir Leitura ✓";
+            } else {
+                // Exibe apenas a página atual
+                const page = chapter.pages[currentPageIndex];
+                container.innerHTML = generateComicPageSVG(page, currentPageIndex + 1, chapter.pages.length, manga.title);
+                pageIndicator.textContent = `Página ${currentPageIndex + 1} de ${chapter.pages.length}`;
+                
+                prevBtn.disabled = currentPageIndex === 0 && activeChapterIndex === 0;
+                prevBtn.textContent = "← Anterior";
+                nextBtn.textContent = (currentPageIndex === chapter.pages.length - 1 && activeChapterIndex === manga.chapters.length - 1) 
+                    ? "Concluir ✓" 
+                    : "Próxima →";
+            }
+
+            // Rola o leitor para o topo suavemente
+            document.getElementById("reader-viewport").scrollTo({ top: 0, behavior: "smooth" });
+            renderComments();
+        }
+
+        function nextPage() {
+            const manga = MANGAS[activeMangaIndex];
+            const chapter = manga.chapters[activeChapterIndex];
+
+            if (readingMode === "single" && currentPageIndex < chapter.pages.length - 1) {
+                currentPageIndex++;
+                renderReaderContent();
+            } else if (activeChapterIndex < manga.chapters.length - 1) {
+                activeChapterIndex++;
+                currentPageIndex = 0;
+                document.getElementById("reader-chapter-select").value = activeChapterIndex;
+                showToast(`Avançando para ${manga.chapters[activeChapterIndex].num}!`);
+                renderReaderContent();
+            } else {
+                showToast("Você chegou ao fim dos capítulos disponíveis! Obrigado por ler na Ruby Loser ♥");
+            }
+        }
+
+        function prevPage() {
+            const manga = MANGAS[activeMangaIndex];
+
+            if (readingMode === "single" && currentPageIndex > 0) {
+                currentPageIndex--;
+                renderReaderContent();
+            } else if (activeChapterIndex > 0) {
+                activeChapterIndex--;
+                currentPageIndex = manga.chapters[activeChapterIndex].pages.length - 1;
+                document.getElementById("reader-chapter-select").value = activeChapterIndex;
+                renderReaderContent();
+            }
+        }
+
+        // =========================================================================
+        // SISTEMA DE COMENTÁRIOS
+        // =========================================================================
+        function renderComments() {
+            const key = `${MANGAS[activeMangaIndex].id}-${activeChapterIndex}`;
+            const list = commentsStore[key] || [];
+            const container = document.getElementById("comments-list");
+            document.getElementById("comment-count").textContent = list.length;
+
+            if (list.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 italic text-center py-4">Nenhum comentário ainda. Seja o primeiro a mandar um oi para a Ruby!</p>`;
+                return;
+            }
+
+            container.innerHTML = list.map(c => `
+                <div class="bg-obsidian/80 border border-purple-900/40 rounded-xl p-3.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-bold text-ruby">${escapeHTML(c.author)}</span>
+                        <span class="text-[10px] text-gray-500">${c.time}</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-gray-300">${escapeHTML(c.text)}</p>
+                </div>
+            `).join("");
+        }
+
+        function submitComment(e) {
+            e.preventDefault();
+            const authorInput = document.getElementById("comment-author");
+            const textInput = document.getElementById("comment-text");
+
+            const author = authorInput.value.trim();
+            const text = textInput.value.trim();
+            if (!author || !text) return;
+
+            const key = `${MANGAS[activeMangaIndex].id}-${activeChapterIndex}`;
+            if (!commentsStore[key]) commentsStore[key] = [];
+
+            commentsStore[key].unshift({
+                author,
+                text,
+                time: "Agora mesmo"
+            });
+
+            textInput.value = "";
+            renderComments();
+            showToast("Comentário enviado para a Ruby! ♥");
+        }
+
+        // =========================================================================
+        // FILTROS, BUSCA E UTILITÁRIOS
+        // =========================================================================
+        function setupFilters() {
+            const buttons = document.querySelectorAll(".genre-btn");
+            buttons.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    buttons.forEach(b => {
+                        b.classList.remove("bg-ruby", "text-white", "shadow-md");
+                        b.classList.add("bg-void", "text-gray-300");
+                    });
+                    btn.classList.remove("bg-void", "text-gray-300");
+                    btn.classList.add("bg-ruby", "text-white", "shadow-md");
+
+                    currentGenre = btn.getAttribute("data-genre");
+                    renderCatalog();
+                });
+            });
+
+            const handleSearch = (e) => {
+                searchQuery = e.target.value;
+                document.getElementById("search-input").value = searchQuery;
+                document.getElementById("search-input-mobile").value = searchQuery;
+                renderCatalog();
+            };
+
+            document.getElementById("search-input").addEventListener("input", handleSearch);
+            document.getElementById("search-input-mobile").addEventListener("input", handleSearch);
+        }
+
+        function resetFilters() {
+            currentGenre = "Todos";
+            searchQuery = "";
+            document.getElementById("search-input").value = "";
+            document.getElementById("search-input-mobile").value = "";
+            
+            document.querySelectorAll(".genre-btn").forEach(btn => {
+                if (btn.getAttribute("data-genre") === "Todos") {
+                    btn.classList.add("bg-ruby", "text-white", "shadow-md");
+                    btn.classList.remove("bg-void", "text-gray-300");
+                } else {
+                    btn.classList.remove("bg-ruby", "text-white", "shadow-md");
+                    btn.classList.add("bg-void", "text-gray-300");
+                }
+            });
+            renderCatalog();
+        }
+
+        function showToast(message) {
+            const container = document.getElementById("toast-container");
+            const toast = document.createElement("div");
+            toast.className = "bg-void border border-ruby text-white px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-medium flex items-center gap-2 ruby-glow transition-all duration-300";
+            toast.innerHTML = `<span class="text-ruby">♦</span> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.transform = "translateY(10px)";
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+        }
+
+        // Atalhos de teclado no leitor (Setas Esquerda/Direita e ESC)
+        document.addEventListener("keydown", (e) => {
+            const readerOpen = !document.getElementById("reader-modal").classList.contains("hidden");
+            const detailsOpen = !document.getElementById("details-modal").classList.contains("hidden");
+
+            if (e.key === "Escape") {
+                if (readerOpen) closeReader();
+                if (detailsOpen) closeMangaDetails();
+            } else if (readerOpen && document.activeElement.tagName !== "INPUT") {
+                if (e.key === "ArrowRight") nextPage();
+                if (e.key === "ArrowLeft") prevPage();
+            }
+        });
+
+        // Inicialização
+        window.addEventListener("DOMContentLoaded", () => {
+            renderHeroCover();
+            renderCatalog();
+            setupFilters();
+        });
+    </script>
+</body>
+</html>
